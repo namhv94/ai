@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="slides-format" content="viewport">
+  <title>Phát triển nhân sự IVI trong thời đại nhiều AI Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-bg: #0c1222;
+      --color-bg-deep: #060a14;
+      --color-surface: #15213c;
+      --color-text: #eef4ff;
+      --color-text-secondary: #c8d4e8;
+      --color-text-muted: #91a4c6;
+      --color-accent-1: #4f8cff;
+      --color-accent-2: #00d2b8;
+      --color-accent-3: #9b7bff;
+      --color-glass-bg: rgba(255,255,255,0.06);
+      --color-glass-border: rgba(255,255,255,0.10);
+      --color-vignette: rgba(0,0,0,0.42);
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Inter', sans-serif;
+    }
+  </style>
+  <style>
+    :root { --color-bg: #0c1222; --color-text: #eef4ff; --glow-color-rgb: 79,140,255; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { background: var(--color-bg); margin: 0; }
+    body { font-family: 'Inter', sans-serif; color: var(--color-text); overflow: hidden; height: 100vh; width: 100vw; }
+    .deck { width: 100vw; height: 100vh; position: relative; }
+    .slide { position: absolute; inset: 0; background: var(--color-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.95); transition: opacity 0.7s ease, transform 0.7s ease; pointer-events: none; overflow: hidden; }
+    .slide.active { opacity: 1; transform: scale(1); pointer-events: all; }
+    .slide > .content { position: relative; z-index: 2; width: 100%; max-width: 1180px; padding: clamp(1.25rem, 3vw, 3.25rem); }
+    .nav-controls { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; z-index: 100; background: rgba(11,18,34,0.72); backdrop-filter: blur(10px); padding: 10px 24px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.08); }
+    .nav-btn { width: 40px; height: 40px; border: none; background: rgba(255,255,255,0.06); color: #4f8cff; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+    .slide-dots { display: flex; gap: 8px; }
+    .slide-dots .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.18); cursor: pointer; }
+    .slide-dots .dot.active { background: #4f8cff; transform: scale(1.25); }
+    .slide-counter { font-size: 0.8rem; color: #91a4c6; min-width: 46px; text-align: center; }
+    .reveal { opacity: 0; transform: translateY(20px); }
+    @keyframes float-slow { 0% { transform: translate(0,0) scale(1);} 25% { transform: translate(60px,-40px) scale(1.1);} 50% { transform: translate(-30px,35px) scale(0.92);} 75% { transform: translate(45px,18px) scale(1.06);} 100% { transform: translate(0,0) scale(1);} }
+    @keyframes float-drift { 0% { transform: translate(0,0) scale(1) rotate(0deg);} 33% { transform: translate(-45px,-55px) scale(1.12) rotate(3deg);} 66% { transform: translate(40px,28px) scale(0.9) rotate(-2deg);} 100% { transform: translate(0,0) scale(1) rotate(0deg);} }
+    @keyframes float { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-14px);} }
+    @keyframes glow-pulse { 0%,100% { box-shadow: 0 0 18px rgba(var(--glow-color-rgb),0.18);} 50% { box-shadow: 0 0 30px rgba(var(--glow-color-rgb),0.35);} }
+    .gradient-mesh { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(80px); animation: float-slow 12s ease-in-out infinite; }
+    .blob:nth-child(2) { animation: float-drift 16s ease-in-out infinite; }
+    .blob:nth-child(3) { animation: float-slow 18s ease-in-out infinite reverse; }
+    .slide::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; opacity: 0.03; mix-blend-mode: overlay; }
+    .slide::after { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,0.42) 100%); }
+    .pill { display:inline-flex; align-items:center; gap:.45rem; padding:.45rem .8rem; border-radius:999px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); font-size:.8rem; color:#c8d4e8; }
+    .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; }
+    .metric { animation: glow-pulse 4s ease-in-out infinite; }
+    .bar-track { background: rgba(255,255,255,0.08); border-radius: 999px; height: 18px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4f8cff, #00d2b8); }
+    .timeline-line { position:absolute; left:22px; top:8px; bottom:8px; width:2px; background: linear-gradient(180deg, #4f8cff, #00d2b8); }
+    .timeline-dot { width:16px; height:16px; border-radius:50%; background:#4f8cff; box-shadow:0 0 20px rgba(79,140,255,.55); margin-top:6px; flex:0 0 16px; }
+    .small { font-size:.92rem; line-height:1.45; }
+    .tight li { margin-bottom: .55rem; }
+    .deco-shape { position:absolute; border-radius:999px; filter: blur(2px); opacity:.16; z-index:0; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .2s !important; } }
+  </style>
+</head>
+<body>
+<div class="mouse-spotlight" style="position:fixed;inset:0;z-index:99;pointer-events:none;"></div>
+<div class="deck">
+
+  <div class="slide active" data-slide="1">
+    <div class="gradient-mesh">
+      <div class="blob" style="width:520px;height:520px;top:-120px;right:-100px;background:var(--color-accent-1);opacity:.16"></div>
+      <div class="blob" style="width:320px;height:320px;bottom:-80px;left:-60px;background:var(--color-accent-2);opacity:.12"></div>
+      <div class="blob" style="width:220px;height:220px;top:42%;left:18%;background:var(--color-accent-3);opacity:.11"></div>
+    </div>
+    <canvas class="particle-canvas" style="position:absolute;inset:0;z-index:1"></canvas>
+    <div class="content text-center">
+      <img class="max-h-[92px] max-w-[300px] object-contain mb-5 animate-[float_3s_ease-in-out_infinite] drop-shadow-lg mx-auto" src="https://fpt.auto/wp-content/uploads/2024/11/FPT-Automotive_Orange.png" alt="FPT Automotive logo">
+      <div class="pill reveal mx-auto mb-5">People Strategy · IVI · AI Agent Era</div>
+      <h1 class="font-display text-[clamp(2.4rem,5.8vw,5rem)] font-black tracking-tight mb-4 reveal bg-linear-to-br from-accent-1 via-accent-2 to-accent-3 bg-clip-text text-transparent">Phát triển nhân sự IVI trong thời đại dự án vận hành cùng nhiều AI Agent</h1>
+      <p class="text-[clamp(.95rem,1.4vw,1.25rem)] font-medium text-text-secondary reveal max-w-[920px] mx-auto">Từ mô hình “làm theo đầu việc” sang mô hình “kỹ sư điều phối hệ thống, AI và tri thức” để tăng tốc delivery, giữ chất lượng automotive và tạo lợi thế cho FPT Automotive</p>
+      <p class="text-[clamp(.78rem,1.1vw,1rem)] text-text-muted tracking-[4px] uppercase mt-5 reveal">Đề xuất thực thi thực tế cho đơn vị IVI</p>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="2">
+    <div class="gradient-mesh"><div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:240px;height:240px;bottom:-50px;left:-50px;background:var(--color-accent-2);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Bối cảnh</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">Vì sao chủ đề này cấp thiết với IVI</h2>
+      <div class="grid grid-cols-2 gap-6 mt-6">
+        <div class="glass p-7 reveal hover:-translate-y-1 hover:shadow-xl transition">
+          <div class="text-3xl mb-3">🚗</div>
+          <h3 class="text-xl font-bold mb-3">Ô tô đang chuyển mạnh sang SDV</h3>
+          <p class="small text-text-secondary">Ngành xe đang dịch từ kiến trúc ECU rời rạc sang nền tảng tính toán tập trung, phần mềm cập nhật liên tục và vòng đời tính năng kéo dài sau bán hàng. Điều này làm phần mềm, dữ liệu và tốc độ cải tiến trở thành năng lực cạnh tranh cốt lõi.</p>
+        </div>
+        <div class="glass p-7 reveal hover:-translate-y-1 hover:shadow-xl transition">
+          <div class="text-3xl mb-3">🤖</div>
+          <h3 class="text-xl font-bold mb-3">AI Agent đang đi vào workflow kỹ thuật</h3>
+          <p class="small text-text-secondary">Trong automotive, AI Agent đã được nhắc tới ở các khâu tạo requirement, traceability, code assistant và tạo test case; nhưng giá trị chỉ bền vững khi đi cùng đặc tả, validation và governance chặt.</p>
+        </div>
+        <div class="glass p-7 reveal hover:-translate-y-1 hover:shadow-xl transition">
+          <div class="text-3xl mb-3">📱</div>
+          <h3 class="text-xl font-bold mb-3">IVI là mặt trận trải nghiệm người dùng</h3>
+          <p class="small text-text-secondary">IVI nằm ở giao điểm của HMI, Android/AAOS, connectivity, navigation, middleware, Vehicle HAL và OTA; đây là nơi yêu cầu vừa nhanh, vừa đẹp, vừa ổn định, vừa an toàn.</p>
+        </div>
+        <div class="glass p-7 reveal hover:-translate-y-1 hover:shadow-xl transition">
+          <div class="text-3xl mb-3">🏁</div>
+          <h3 class="text-xl font-bold mb-3">FPT Automotive đã có nền tảng để bứt tốc</h3>
+          <p class="small text-text-secondary">FPT Automotive công bố năng lực end-to-end cho SDV và từng thực hiện dự án full-stack IVI từ application layer đến Android framework và Vehicle HAL, hoàn thành sớm hơn kế hoạch một tháng.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="3">
+    <div class="gradient-mesh"><div class="blob" style="width:320px;height:320px;top:-70px;left:-70px;background:var(--color-accent-3);opacity:.09"></div><div class="blob" style="width:240px;height:240px;bottom:-40px;right:-20px;background:var(--color-accent-2);opacity:.06"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Luận điểm trung tâm</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-6">Không phải giảm người, mà nâng cấp vai trò con người</h2>
+      <div class="grid grid-cols-3 gap-6 mt-6">
+        <div class="glass p-7 reveal metric hover:-translate-y-1 hover:shadow-xl transition text-center">
+          <div class="text-5xl font-extrabold text-accent-1 mb-2">1</div>
+          <h3 class="font-bold text-lg mb-2">Từ coder sang orchestrator</h3>
+          <p class="small text-text-secondary">Kỹ sư IVI cần biết giao việc cho agent, kiểm soát output, ráp vào kiến trúc thật và chịu trách nhiệm cuối cùng.</p>
+        </div>
+        <div class="glass p-7 reveal metric hover:-translate-y-1 hover:shadow-xl transition text-center">
+          <div class="text-5xl font-extrabold text-accent-2 mb-2">2</div>
+          <h3 class="font-bold text-lg mb-2">Từ làm nhanh sang làm đúng</h3>
+          <p class="small text-text-secondary">Trong môi trường automotive, AI chỉ hữu ích khi đặc tả, traceability, test và compliance mạnh hơn trước.</p>
+        </div>
+        <div class="glass p-7 reveal metric hover:-translate-y-1 hover:shadow-xl transition text-center">
+          <div class="text-5xl font-extrabold text-accent-3 mb-2">3</div>
+          <h3 class="font-bold text-lg mb-2">Từ năng lực cá nhân sang năng lực tổ chức</h3>
+          <p class="small text-text-secondary">Lợi thế sẽ không nằm ở vài cá nhân dùng AI giỏi, mà ở quy trình, tài sản tri thức và CoE dùng chung toàn đơn vị.</p>
+        </div>
+      </div>
+      <div class="glass p-6 mt-6 reveal">
+        <p class="text-lg leading-relaxed text-text-secondary">Thông điệp cho lãnh đạo: AI Agent không thay thế đội IVI, mà buộc đội IVI tiến hóa thành lực lượng kỹ sư có domain mạnh, đặc tả tốt, kiểm định chắc và tận dụng AI như một lớp năng suất mới.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="4">
+    <div class="gradient-mesh"><div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:220px;height:220px;bottom:-50px;left:-30px;background:var(--color-accent-3);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Tác động</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">Những thay đổi lớn trong dự án IVI khi có nhiều AI Agent</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">AI Agent có thể hỗ trợ tốt</h3>
+          <ul class="tight text-text-secondary small list-disc pl-5">
+            <li>Phân tích requirement, sinh draft user story, use case và trace matrix ban đầu.</li>
+            <li>Gợi ý code, refactor, sinh unit test, tạo mock API, tài liệu kỹ thuật và onboarding note.</li>
+            <li>Tạo test case từ yêu cầu hệ thống, hỗ trợ regression, log triage và tổng hợp lỗi lặp lại.</li>
+            <li>Tìm kiếm tri thức dự án, chuẩn coding, guideline OEM, lesson learned theo ngữ cảnh.</li>
+          </ul>
+        </div>
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">Con người vẫn phải giữ</h3>
+          <ul class="tight text-text-secondary small list-disc pl-5">
+            <li>Quyết định kiến trúc, boundary trách nhiệm, design trade-off và integration strategy.</li>
+            <li>Đảm bảo functional safety, cybersecurity, chất lượng release và tuân thủ quy trình.</li>
+            <li>Xử lý các bài toán HMI/UX gắn với bối cảnh lái xe, trải nghiệm vùng thị trường và hành vi người dùng.</li>
+            <li>Chịu trách nhiệm cuối về chất lượng trước OEM/Tier-1, không giao mặc định niềm tin cho agent.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-5 mt-6">
+        <div class="glass p-5 reveal text-center"><div class="text-sm text-text-muted uppercase tracking-[3px]">Thay đổi 1</div><div class="text-xl font-bold mt-2">Ít thao tác lặp lại</div></div>
+        <div class="glass p-5 reveal text-center"><div class="text-sm text-text-muted uppercase tracking-[3px]">Thay đổi 2</div><div class="text-xl font-bold mt-2">Nhiều kiểm định hơn</div></div>
+        <div class="glass p-5 reveal text-center"><div class="text-sm text-text-muted uppercase tracking-[3px]">Thay đổi 3</div><div class="text-xl font-bold mt-2">Đòi hỏi domain sâu hơn</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="5">
+    <div class="gradient-mesh"><div class="blob" style="width:350px;height:350px;top:-80px;left:-70px;background:var(--color-accent-2);opacity:.08"></div><div class="blob" style="width:240px;height:240px;bottom:-40px;right:-20px;background:var(--color-accent-1);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Khoảng trống hiện nay</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">5 năng lực IVI thường thiếu khi bước vào kỷ nguyên agent</h2>
+      <div class="grid grid-cols-5 gap-4 mt-6">
+        <div class="glass p-5 reveal hover:-translate-y-1 transition"><div class="text-2xl mb-2">🧭</div><div class="font-bold mb-2">Spec discipline</div><div class="small text-text-secondary">Requirement còn rời rạc, khó machine-readable.</div></div>
+        <div class="glass p-5 reveal hover:-translate-y-1 transition"><div class="text-2xl mb-2">🔗</div><div class="font-bold mb-2">Traceability</div><div class="small text-text-secondary">Khó nối end-to-end từ yêu cầu đến test và release.</div></div>
+        <div class="glass p-5 reveal hover:-translate-y-1 transition"><div class="text-2xl mb-2">🧠</div><div class="font-bold mb-2">Prompting theo domain</div><div class="small text-text-secondary">Biết dùng AI chung, nhưng chưa giỏi cho Android/AAOS/HAL.</div></div>
+        <div class="glass p-5 reveal hover:-translate-y-1 transition"><div class="text-2xl mb-2">🧪</div><div class="font-bold mb-2">AI validation</div><div class="small text-text-secondary">Thiếu chuẩn để đánh giá output của agent.</div></div>
+        <div class="glass p-5 reveal hover:-translate-y-1 transition"><div class="text-2xl mb-2">🏛️</div><div class="font-bold mb-2">Governance</div><div class="small text-text-secondary">Chưa rõ data nào được đưa vào AI, log nào phải lưu, ai phê duyệt.</div></div>
+      </div>
+      <div class="glass p-6 mt-6 reveal">
+        <p class="text-lg text-text-secondary">Nếu không lấp 5 khoảng trống này, AI sẽ chỉ làm tăng tốc việc tạo ra nhiều output hơn, chứ không tăng tốc delivery đúng nghĩa.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="6">
+    <div class="gradient-mesh"><div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:240px;height:240px;bottom:-50px;left:-30px;background:var(--color-accent-2);opacity:.06"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Khung năng lực</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-6">Mô hình năng lực nhân sự IVI 4 lớp</h2>
+      <div class="grid grid-cols-2 gap-6 mt-4">
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">Lớp 1 · Nền tảng bắt buộc</h3>
+          <ul class="tight small text-text-secondary list-disc pl-5">
+            <li>Android/AAOS, Linux embedded, C/C++/Java/Kotlin theo stack thực tế của đơn vị.</li>
+            <li>Automotive basics: Vehicle HAL, CAN/Ethernet, OTA, cybersecurity và chất lượng phần mềm.</li>
+            <li>Quy trình dự án, review discipline, ticket hygiene, tài liệu hóa đủ cho reuse.</li>
+          </ul>
+        </div>
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">Lớp 2 · Năng lực làm việc với AI Agent</h3>
+          <ul class="tight small text-text-secondary list-disc pl-5">
+            <li>Prompt engineering theo ngữ cảnh IVI: requirement, code, debug, test, doc.</li>
+            <li>Context curation: biết đưa đúng tài liệu, log, API contract, guideline OEM vào agent.</li>
+            <li>Output verification: đối chiếu logic, hiệu năng, bảo mật, coding standard và edge case.</li>
+          </ul>
+        </div>
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">Lớp 3 · Kỹ năng hệ thống</h3>
+          <ul class="tight small text-text-secondary list-disc pl-5">
+            <li>System thinking, interface design, dependency management và root cause analysis.</li>
+            <li>Spec-driven development, traceability, testability và release readiness.</li>
+            <li>Làm việc xuyên team với cloud, mobile, HMI, validation và PM.</li>
+          </ul>
+        </div>
+        <div class="glass p-7 reveal">
+          <h3 class="text-xl font-bold mb-4">Lớp 4 · Lãnh đạo kỹ thuật mới</h3>
+          <ul class="tight small text-text-secondary list-disc pl-5">
+            <li>Biến bài toán delivery thành workflow có AI hỗ trợ nhưng vẫn audit được.</li>
+            <li>Xây asset dùng chung: template, checklist, test accelerators, RAG knowledge base.</li>
+            <li>Huấn luyện đội ngũ, đo ROI và quản lý rủi ro AI trong dự án thật.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="7">
+    <div class="gradient-mesh"><div class="blob" style="width:500px;height:500px;top:-100px;right:-100px;background:var(--color-accent-3);opacity:.12"></div><div class="blob" style="width:300px;height:300px;bottom:-80px;left:-40px;background:var(--color-accent-2);opacity:.1"></div></div>
+    <canvas class="particle-canvas-ambient" style="position:absolute;inset:0;z-index:1"></canvas>
+    <div class="content text-center">
+      <div class="pill reveal mx-auto mb-4">Thiết kế tổ chức</div>
+      <h2 class="font-display text-[clamp(2.1rem,4.4vw,3.6rem)] font-bold reveal mb-4">Cần chuyển từ “resource pool” sang “capability engine”</h2>
+      <p class="text-xl text-text-secondary max-w-[920px] mx-auto reveal">Đơn vị IVI không chỉ phân người theo dự án, mà phải chủ động xây năng lực cốt lõi, tài sản tri thức và cơ chế nhân rộng năng suất bằng AI.</p>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="8">
+    <div class="gradient-mesh"><div class="blob" style="width:320px;height:320px;top:-70px;left:-60px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:260px;height:260px;bottom:-50px;right:-20px;background:var(--color-accent-2);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Cơ cấu nhân sự</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">Vai trò mới nên hình thành trong đơn vị IVI</h2>
+      <div class="grid grid-cols-3 gap-5 mt-6">
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">🧩</div><div class="font-bold text-lg mb-2">IVI Domain Architect</div><div class="small text-text-secondary">Giữ kiến trúc chuẩn cho HMI, AAOS, middleware, integration và non-functional requirements.</div></div>
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">🧠</div><div class="font-bold text-lg mb-2">AI Workflow Engineer</div><div class="small text-text-secondary">Thiết kế prompt pack, RAG source, reusable workflow cho code/test/doc và đo hiệu quả.</div></div>
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">🛡️</div><div class="font-bold text-lg mb-2">AI Quality & Compliance Lead</div><div class="small text-text-secondary">Định nghĩa hàng rào cho data, validation, traceability, security và audit log.</div></div>
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">📚</div><div class="font-bold text-lg mb-2">Knowledge Curator</div><div class="small text-text-secondary">Biến guideline, lesson learned, code pattern và OEM convention thành knowledge asset sống.</div></div>
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">🧪</div><div class="font-bold text-lg mb-2">Test Automation Champion</div><div class="small text-text-secondary">Gắn AI với regression, scenario generation, defect triage và test data chuẩn hóa.</div></div>
+        <div class="glass p-6 reveal"><div class="text-2xl mb-2">👨‍🏫</div><div class="font-bold text-lg mb-2">People Coach / Tech Lead</div><div class="small text-text-secondary">Kèm cặp kỹ sư trẻ đi từ dùng tool sang làm chủ bài toán, giảm lệ thuộc vào cá nhân giỏi.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="9">
+    <div class="gradient-mesh"><div class="blob" style="width:350px;height:350px;top:-80px;right:-80px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:230px;height:230px;bottom:-40px;left:-20px;background:var(--color-accent-3);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Roadmap 12 tháng</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">Lộ trình phát triển nhân sự IVI theo 3 giai đoạn</h2>
+      <div class="relative pl-0 mt-6">
+        <div class="timeline-line"></div>
+        <div class="grid gap-5">
+          <div class="glass p-6 reveal ml-10 relative"><div class="absolute -left-[34px] top-7 timeline-dot"></div><div class="text-sm uppercase tracking-[3px] text-text-muted mb-2">0–3 tháng</div><div class="font-bold text-xl mb-2">Chuẩn hóa nền móng</div><div class="small text-text-secondary">Xác định 10–15 use case AI có giá trị thật cho IVI; ban hành policy dữ liệu; chuẩn hóa template requirement, design note, code review, test case, defect triage.</div></div>
+          <div class="glass p-6 reveal ml-10 relative"><div class="absolute -left-[34px] top-7 timeline-dot"></div><div class="text-sm uppercase tracking-[3px] text-text-muted mb-2">3–6 tháng</div><div class="font-bold text-xl mb-2">Pilot theo squad</div><div class="small text-text-secondary">Chọn 2–3 squad pilot: một squad app/HMI, một squad platform/integration, một squad validation; đo lead time, defect leakage, effort documentation, onboarding speed.</div></div>
+          <div class="glass p-6 reveal ml-10 relative"><div class="absolute -left-[34px] top-7 timeline-dot"></div><div class="text-sm uppercase tracking-[3px] text-text-muted mb-2">6–12 tháng</div><div class="font-bold text-xl mb-2">Nhân rộng toàn đơn vị</div><div class="small text-text-secondary">Đưa workflow hiệu quả vào quy trình chuẩn, xây knowledge base nội bộ, hình thành AI/SDV CoE và gắn KPI năng lực với trưởng nhóm, PM, architect.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="10">
+    <div class="gradient-mesh"><div class="blob" style="width:340px;height:340px;top:-80px;left:-70px;background:var(--color-accent-2);opacity:.09"></div><div class="blob" style="width:240px;height:240px;bottom:-50px;right:-30px;background:var(--color-accent-1);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Chương trình đào tạo</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">Khung đào tạo 70-20-10 cho People IVI</h2>
+      <div class="grid grid-cols-3 gap-6 mt-6">
+        <div class="glass p-7 reveal text-center"><div class="text-5xl font-extrabold text-accent-1 mb-2">70%</div><h3 class="font-bold text-lg mb-3">On-the-job</h3><p class="small text-text-secondary">Học trên dự án thật: prompt pack, AI-assisted debug, test generation, review checklist, retrospectives theo use case.</p></div>
+        <div class="glass p-7 reveal text-center"><div class="text-5xl font-extrabold text-accent-2 mb-2">20%</div><h3 class="font-bold text-lg mb-3">Coaching</h3><p class="small text-text-secondary">Architect, tech lead, QA lead kèm cặp qua pair review, brown bag session, office hour và cộng đồng thực hành.</p></div>
+        <div class="glass p-7 reveal text-center"><div class="text-5xl font-extrabold text-accent-3 mb-2">10%</div><h3 class="font-bold text-lg mb-3">Formal learning</h3><p class="small text-text-secondary">Khoá ngắn theo track: AAOS + HAL, test automation, AI workflow, spec-driven development, cybersecurity và compliance.</p></div>
+      </div>
+      <div class="grid grid-cols-4 gap-4 mt-6">
+        <div class="glass p-4 reveal text-center small">Foundation track cho fresher</div>
+        <div class="glass p-4 reveal text-center small">Upskill track cho mid-level</div>
+        <div class="glass p-4 reveal text-center small">Architect track cho senior</div>
+        <div class="glass p-4 reveal text-center small">Manager track cho leads/PM</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="11">
+    <div class="gradient-mesh"><div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:250px;height:250px;bottom:-50px;left:-30px;background:var(--color-accent-2);opacity:.06"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">KPI đo hiệu quả</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-6">Đo nhân sự bằng tác động delivery, không chỉ số giờ học</h2>
+      <div class="grid grid-cols-3 gap-5 mt-4">
+        <div class="glass p-6 reveal"><div class="font-bold text-lg mb-4">Delivery KPI</div><div class="space-y-4">
+          <div><div class="flex justify-between text-sm mb-1"><span>Lead time task/spec</span><span>-15% đến -25%</span></div><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Onboarding speed</span><span>+20% đến +30%</span></div><div class="bar-track"><div class="bar-fill" style="width:72%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Automation coverage</span><span>+25%</span></div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div></div>
+        </div></div>
+        <div class="glass p-6 reveal"><div class="font-bold text-lg mb-4">Quality KPI</div><div class="space-y-4">
+          <div><div class="flex justify-between text-sm mb-1"><span>Defect leakage</span><span>-10% đến -20%</span></div><div class="bar-track"><div class="bar-fill" style="width:66%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Reuse asset rate</span><span>+30%</span></div><div class="bar-track"><div class="bar-fill" style="width:76%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Traceability completeness</span><span>>90%</span></div><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div></div>
+        </div></div>
+        <div class="glass p-6 reveal"><div class="font-bold text-lg mb-4">People KPI</div><div class="space-y-4">
+          <div><div class="flex justify-between text-sm mb-1"><span>Certified AI workflow users</span><span>60%+</span></div><div class="bar-track"><div class="bar-fill" style="width:68%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Internal mentors</span><span>10–15% lực lượng</span></div><div class="bar-track"><div class="bar-fill" style="width:58%"></div></div></div>
+          <div><div class="flex justify-between text-sm mb-1"><span>Knowledge contribution</span><span>hàng tháng</span></div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div></div>
+        </div></div>
+      </div>
+      <div class="glass p-5 mt-6 reveal"><p class="small text-text-secondary">Các mức % trên là mục tiêu điều hành đề xuất để pilot và điều chỉnh theo thực tế từng dự án; nguyên tắc là phải đo trước-sau trên cùng một squad để chứng minh ROI.</p></div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="12">
+    <div class="gradient-mesh"><div class="blob" style="width:350px;height:350px;top:-80px;left:-60px;background:var(--color-accent-3);opacity:.09"></div><div class="blob" style="width:220px;height:220px;bottom:-50px;right:-20px;background:var(--color-accent-2);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Governance</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">4 nguyên tắc để AI trong IVI không bị viển vông</h2>
+      <div class="grid grid-cols-2 gap-6 mt-6">
+        <div class="glass p-7 reveal"><h3 class="text-xl font-bold mb-3">1. Chỉ dùng AI ở bài toán có chuẩn đầu ra</h3><p class="small text-text-secondary">Ưu tiên spec draft, code review support, unit test, log analysis, knowledge retrieval. Tránh dùng AI tự quyết ở các hạng mục safety/compliance nếu chưa có hàng rào rõ.</p></div>
+        <div class="glass p-7 reveal"><h3 class="text-xl font-bold mb-3">2. Tách rõ sinh nội dung và phê duyệt</h3><p class="small text-text-secondary">AI tạo nháp; kỹ sư, lead hoặc QA là người duyệt. Không để mô hình “agent sinh, agent tự xác nhận” trong khâu quan trọng.</p></div>
+        <div class="glass p-7 reveal"><h3 class="text-xl font-bold mb-3">3. Quản lý dữ liệu và IP nghiêm túc</h3><p class="small text-text-secondary">Phân loại tài liệu nào được đưa vào agent, tài liệu nào chỉ dùng nội bộ kín; lưu log prompt/output cho use case quan trọng.</p></div>
+        <div class="glass p-7 reveal"><h3 class="text-xl font-bold mb-3">4. Xây CoE để mở rộng có kiểm soát</h3><p class="small text-text-secondary">CoE không làm thay delivery team, mà cung cấp framework, best practice, accelerator, benchmark và hỗ trợ rollout nhanh hơn.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="13">
+    <div class="gradient-mesh"><div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-1);opacity:.08"></div><div class="blob" style="width:260px;height:260px;bottom:-40px;left:-30px;background:var(--color-accent-2);opacity:.07"></div></div>
+    <div class="content">
+      <div class="pill reveal mb-4">Đề xuất với lãnh đạo</div>
+      <h2 class="font-display text-[clamp(2rem,4vw,3rem)] font-bold reveal mb-7">6 việc đơn vị IVI có thể làm ngay</h2>
+      <div class="grid grid-cols-2 gap-5">
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">01.</span> Lập danh mục 10–15 use case AI ưu tiên theo giá trị delivery và rủi ro.</div>
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">02.</span> Chọn 2–3 dự án pilot có lead mạnh, dữ liệu đủ và khách hàng phù hợp.</div>
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">03.</span> Ban hành guideline dùng AI cho requirement, code, test, data và bảo mật.</div>
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">04.</span> Bổ nhiệm nhóm nòng cốt gồm architect, QA, PM, HR/L&D để vận hành chương trình People.</div>
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">05.</span> Xây knowledge base IVI dùng chung: template, prompt, checklist, lỗi điển hình, pattern code.</div>
+        <div class="glass p-5 reveal"><span class="font-bold text-accent-1">06.</span> Gắn KPI tăng năng suất và chất lượng vào trưởng nhóm, không coi AI là hoạt động phong trào.</div>
+      </div>
+      <div class="glass p-6 mt-6 reveal"><p class="text-lg text-text-secondary">Khi đó, IVI sẽ tạo được năng lực tổ chức khó sao chép: hiểu domain xe, vận hành AI đúng cách và delivery bền vững hơn đối thủ.</p></div>
+    </div>
+  </div>
+
+  <div class="slide" data-slide="14">
+    <div class="gradient-mesh">
+      <div class="blob" style="width:500px;height:500px;top:-100px;right:-100px;background:var(--color-accent-1);opacity:.15"></div>
+      <div class="blob" style="width:320px;height:320px;bottom:-90px;left:-50px;background:var(--color-accent-2);opacity:.12"></div>
+      <div class="blob" style="width:220px;height:220px;top:40%;left:15%;background:var(--color-accent-3);opacity:.1"></div>
+    </div>
+    <canvas class="particle-canvas" style="position:absolute;inset:0;z-index:1"></canvas>
+    <div class="content text-center">
+      <div class="text-[112px] mb-5 animate-[float_3s_ease-in-out_infinite] reveal">🚘</div>
+      <h2 class="font-display text-[clamp(2.6rem,6vw,4.8rem)] font-black bg-linear-to-br from-accent-1 via-accent-2 to-accent-3 bg-clip-text text-transparent tracking-tight mb-4 reveal">Thông điệp chốt</h2>
+      <p class="text-[clamp(1rem,1.6vw,1.35rem)] text-text-secondary max-w-[900px] mx-auto reveal">Phát triển nhân sự IVI trong thời đại nhiều AI Agent không phải là mua thêm tool, mà là tái thiết năng lực con người, quy trình và tài sản tri thức để đơn vị giao hàng nhanh hơn, đúng hơn và có thể scale.</p>
+      <p class="text-sm uppercase tracking-[5px] text-text-muted mt-6 reveal">People first · AI enabled · Automotive grade</p>
+    </div>
+  </div>
+</div>
+
+<div class="nav-controls">
+  <button class="nav-btn" aria-label="Previous slide" onclick="changeSlide(-1)">&#8249;</button>
+  <div class="slide-dots" id="dots"></div>
+  <button class="nav-btn" aria-label="Next slide" onclick="changeSlide(1)">&#8250;</button>
+  <span class="slide-counter" id="counter">1 / 14</span>
+</div>
+
+<script>
+let current = 1;
+const total = document.querySelectorAll('.slide').length;
+const dotsContainer = document.getElementById('dots');
+const counter = document.getElementById('counter');
+for (let i = 1; i <= total; i++) { const dot = document.createElement('div'); dot.className = 'dot' + (i === 1 ? ' active' : ''); dot.onclick = () => goToSlide(i); dotsContainer.appendChild(dot); }
+function goToSlide(n) { const prev = document.querySelector('.slide.active'); const next = document.querySelector(`.slide[data-slide="${n}"]`); if (prev) prev.classList.remove('active'); if (next) { next.classList.add('active'); animateSlide(next); } current = n; updateNav(); }
+function changeSlide(dir) { let next = current + dir; if (next < 1) next = total; if (next > total) next = 1; goToSlide(next); }
+function updateNav() { document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i + 1 === current)); counter.textContent = current + ' / ' + total; }
+document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); changeSlide(1); } if (e.key === 'ArrowLeft') { e.preventDefault(); changeSlide(-1); } });
+let touchStartX = 0; document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }); document.addEventListener('touchend', (e) => { const diff = touchStartX - e.changedTouches[0].clientX; if (Math.abs(diff) > 50) changeSlide(diff > 0 ? 1 : -1); });
+function animateSlide(slide) { slide.querySelectorAll('.reveal').forEach((el, i) => { el.style.transition = 'none'; el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; el.offsetHeight; const delay = i * 0.08; el.style.transition = `opacity 0.35s ease ${delay}s, transform 0.35s ease ${delay}s`; el.style.opacity = '1'; el.style.transform = 'translateY(0px)'; }); }
+document.addEventListener('mousemove', (e) => { const spotlight = document.querySelector('.mouse-spotlight'); if (spotlight) spotlight.style.background = `radial-gradient(620px circle at ${e.clientX}px ${e.clientY}px, rgba(79,140,255,0.07), transparent 40%)`; });
+window.initParticles = function(canvas, options) { if (!canvas) return; const ctx = canvas.getContext('2d'); canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; const interactive = options.interactive !== false; const count = options.count || (interactive ? 55 : 18); let mx = -1000, my = -1000; const particles = Array.from({ length: count }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, size: Math.random() * 2.5 + 0.8, alpha: Math.random() * 0.35 + 0.1 })); if (interactive) { canvas.addEventListener('mousemove', (e) => { const rect = canvas.getBoundingClientRect(); mx = e.clientX - rect.left; my = e.clientY - rect.top; }); canvas.addEventListener('mouseleave', () => { mx = -1000; my = -1000; }); }
+(function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { if (interactive) { const dx = p.x - mx, dy = p.y - my, dist = Math.sqrt(dx * dx + dy * dy); if (dist < 120) { const force = (120 - dist) / 120 * 2; p.vx += (dx / (dist || 1)) * force * 0.1; p.vy += (dy / (dist || 1)) * force * 0.1; } } p.vx *= 0.98; p.vy *= 0.98; p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0; if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(79,140,255,${p.alpha})`; ctx.fill(); }); requestAnimationFrame(animate); })(); };
+document.querySelectorAll('.particle-canvas').forEach(c => window.initParticles(c, { interactive: true, count: 55 }));
+document.querySelectorAll('.particle-canvas-ambient').forEach(c => window.initParticles(c, { interactive: false, count: 18 }));
+animateSlide(document.querySelector('.slide.active'));
+</script>
+</body>
+</html>
